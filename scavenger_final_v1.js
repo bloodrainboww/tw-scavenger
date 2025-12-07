@@ -1,10 +1,11 @@
 // ================================
 //  KLANLAR TEMİZLEME YARDIMCISI
-//  V3 - ENTER DÖNGÜSÜ + FAVORİ SÜRELER
+//  V3.1 - ENTER DÖNGÜSÜ + FAVORİ SÜRELER
+//        + BİRİM SEÇİMİ + BAYRAK BİLGİSİ
 //  (github üzerinden yüklenir, tıklama yok, saldırı yok)
 // ================================
 
-(function() {
+(function () {
 
     // Sadece temizleme ekranında çalışsın
     if (!location.href.includes("screen=place") || !location.href.includes("mode=scavenge")) {
@@ -19,6 +20,30 @@
     // Seviye döngüsü: 3 = Lvl4, 2 = Lvl3, 1 = Lvl2, 0 = Lvl1
     if (typeof window.TW_SCAV_CURRENT_LEVEL === "undefined") {
         window.TW_SCAV_CURRENT_LEVEL = 3; // ilk: Lvl4 (%75)
+    }
+
+    // -------- BAYRAK BİLGİSİ HESAPLAMA --------
+
+    var haulFactor =
+        (window.game_data &&
+            window.game_data.village &&
+            window.game_data.village.unit_carry_factor) || 1;
+
+    var bonusPercent = Math.round((haulFactor - 1) * 100); // örn. 1.08 -> 8%
+    var flagInfoText;
+
+    if (bonusPercent <= 0) {
+        flagInfoText = "Taşıma bayrağı yok veya etkisiz.";
+    } else {
+        // Kullanıcının verdiği skala: %2–%10 → seviye 1–9
+        var levelMap = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9 };
+        var lvl = levelMap[bonusPercent] || "?";
+        flagInfoText =
+            "Taşıma bayrağı: " +
+            (lvl === "?" ? "bilinmeyen seviye" : ("Seviye " + lvl)) +
+            " (+" +
+            bonusPercent +
+            "% kapasite)";
     }
 
     // -------- PANEL OLUŞTURMA --------
@@ -41,62 +66,67 @@
     ].join(";") + ";";
 
     function unitRow(u, label) {
-        return `
-        <div style="display:flex;align-items:center;gap:6px;margin:4px 0;">
-            <img src="/graphic/unit/unit_${u}.png" width="18" height="18">
-            <span style="flex:1;">${label}</span>
-            <input class="tw_count" data-unit="${u}" type="number" value="0"
-                   style="width:60px;background:#222;color:#eee;border:1px solid #555;text-align:center;">
-        </div>`;
+        return (
+            '<div style="display:flex;align-items:center;gap:6px;margin:4px 0;">' +
+            '<input type="checkbox" class="tw_enable" data-unit="' + u + '" checked>' +
+            '<img src="/graphic/unit/unit_' + u + '.png" width="18" height="18">' +
+            '<span style="flex:1;">' + label + '</span>' +
+            '<input class="tw_count" data-unit="' + u + '" type="number" value="0"' +
+            '       style="width:60px;background:#222;color:#eee;border:1px solid #555;text-align:center;">' +
+            '</div>'
+        );
     }
 
-    panel.innerHTML = `
-        <div style="font-size:15px;text-align:center;font-weight:bold;margin-bottom:6px;">
-            🛡️ Temizleme Dağıtım Paneli (ENTER Paşa Modu)
-        </div>
+    panel.innerHTML =
+        '<div style="font-size:15px;text-align:center;font-weight:bold;margin-bottom:4px;">' +
+        '    🛡️ Temizleme Dağıtım Paneli (ENTER Paşa Modu)' +
+        ' </div>' +
 
-        <div style="text-align:center;margin-bottom:8px;">
-            Hedef Süre (HH:MM)<br>
-            <input id="tw_time" value="01:30"
-                   style="width:90px;background:#222;color:#eee;border:1px solid #555;text-align:center;">
-        </div>
+        '<div id="tw_flag" style="text-align:center;font-size:11px;margin-bottom:6px;color:#ccc;">' +
+        flagInfoText +
+        '</div>' +
 
-        <div style="text-align:center;margin-bottom:8px;font-size:12px;">
-            Kısayollar:
-            <button type="button" class="tw_preset" data-time="01:05">01:05</button>
-            <button type="button" class="tw_preset" data-time="01:30">01:30</button>
-            <button type="button" class="tw_preset" data-time="02:00">02:00</button>
-            <button type="button" class="tw_preset" data-time="04:00">04:00</button>
-        </div>
+        '<div style="text-align:center;margin-bottom:8px;">' +
+        '    Hedef Süre (HH:MM)<br>' +
+        '    <input id="tw_time" value="01:30"' +
+        '           style="width:90px;background:#222;color:#eee;border:1px solid #555;text-align:center;">' +
+        '</div>' +
 
-        <div id="tw_level_info" style="text-align:center;margin-bottom:8px;font-size:12px;">
-            Şu an doldurulacak seviye: <b>Lvl4 (%75)</b><br>
-            (Enter veya butona basınca bu seviyeyi hesaplayıp kutuya yazar)
-        </div>
+        '<div style="text-align:center;margin-bottom:8px;font-size:12px;">' +
+        '    Kısayollar: ' +
+        '    <button type="button" class="tw_preset" data-time="01:05">01:05</button>' +
+        '    <button type="button" class="tw_preset" data-time="01:30">01:30</button>' +
+        '    <button type="button" class="tw_preset" data-time="02:00">02:00</button>' +
+        '    <button type="button" class="tw_preset" data-time="04:00">04:00</button>' +
+        '</div>' +
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            ${unitRow("spear",   "Mızrak")}
-            ${unitRow("sword",   "Kılıç")}
-            ${unitRow("axe",     "Balta")}
-            ${unitRow("archer",  "Okçu")}
-            ${unitRow("light",   "Hafif Atlı")}
-            ${unitRow("heavy",   "Ağır Atlı")}
-            ${unitRow("marcher", "Atlı Okçu")}
-            ${unitRow("knight",  "Şövalye")}
-        </div>
+        '<div id="tw_level_info" style="text-align:center;margin-bottom:8px;font-size:12px;">' +
+        '    Şu an doldurulacak seviye: <b>Lvl4 (%75)</b><br>' +
+        '    (Enter veya butona basınca bu seviyeyi hesaplayıp kutuya yazar)' +
+        '</div>' +
 
-        <button id="tw_calc" style="margin-top:10px;width:100%;padding:8px;
-                background:#c89b54;border:1px solid #705020;border-radius:8px;font-weight:bold;">
-            🧮 Enter / Tık ile Hesapla ve Bu Seviyeye Yaz
-        </button>
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+        unitRow("spear", "Mızrak") +
+        unitRow("sword", "Kılıç") +
+        unitRow("axe", "Balta") +
+        unitRow("archer", "Okçu") +
+        unitRow("light", "Hafif Atlı") +
+        unitRow("heavy", "Ağır Atlı") +
+        unitRow("marcher", "Atlı Okçu") +
+        unitRow("knight", "Şövalye") +
+        '</div>' +
 
-        <div id="tw_result" style="margin-top:8px;font-size:12px;line-height:1.4;"></div>
+        '<button id="tw_calc" style="margin-top:10px;width:100%;padding:8px;' +
+        '        background:#c89b54;border:1px solid #705020;border-radius:8px;font-weight:bold;">' +
+        '    🧮 Enter / Tık ile Hesapla ve Bu Seviyeye Yaz' +
+        '</button>' +
 
-        <button id="tw_close" style="margin-top:6px;width:100%;padding:6px;
-                background:#555;border:1px solid #333;border-radius:8px;color:#eee;">
-            Kapat
-        </button>
-    `;
+        '<div id="tw_result" style="margin-top:8px;font-size:12px;line-height:1.4;"></div>' +
+
+        '<button id="tw_close" style="margin-top:6px;width:100%;padding:6px;' +
+        '        background:#555;border:1px solid #333;border-radius:8px;color:#eee;">' +
+        '    Kapat' +
+        '</button>';
 
     document.body.appendChild(panel);
 
@@ -107,7 +137,7 @@
     function updateLevelInfo() {
         var info = document.getElementById("tw_level_info");
         var idx = window.TW_SCAV_CURRENT_LEVEL;
-        var name = ["Lvl1 (%10)","Lvl2 (%25)","Lvl3 (%50)","Lvl4 (%75)"][idx];
+        var name = ["Lvl1 (%10)", "Lvl2 (%25)", "Lvl3 (%50)", "Lvl4 (%75)"][idx];
         if (info) {
             info.innerHTML =
                 "Şu an doldurulacak seviye: <b>" + name + "</b><br>" +
@@ -118,8 +148,8 @@
 
     // -------- FAVORİ SÜRE BUTONLARI --------
 
-    document.querySelectorAll(".tw_preset").forEach(function(btn){
-        btn.onclick = function(){
+    document.querySelectorAll(".tw_preset").forEach(function (btn) {
+        btn.onclick = function () {
             var t = this.dataset.time;
             var input = document.getElementById("tw_time");
             if (input) input.value = t;
@@ -133,21 +163,18 @@
 
     // Taşıma kapasiteleri
     var CARRY = {
-        spear:   25,
-        sword:   15,
-        axe:     10,
-        archer:  18,
-        light:   80,
-        heavy:   50,
+        spear: 25,
+        sword: 15,
+        axe: 10,
+        archer: 18,
+        light: 80,
+        heavy: 50,
         marcher: 50,
-        knight:  100
+        knight: 100
     };
 
-    // Bayrak çarpanı
-    var haulFactor = (window.game_data && window.game_data.village && window.game_data.village.unit_carry_factor) || 1;
-
     function durationFromK(K) {
-        var inner = (K * K * 100);
+        var inner = K * K * 100;
         var powered = Math.pow(inner, 0.45);
         return (powered + 1800) * 0.7722074897; // saniye
     }
@@ -156,7 +183,7 @@
         sec = Math.round(sec);
         var h = Math.floor(sec / 3600);
         var m = Math.floor((sec % 3600) / 60);
-        return (h.toString().padStart(2,"0") + ":" + m.toString().padStart(2,"0"));
+        return h.toString().padStart(2, "0") + ":" + m.toString().padStart(2, "0");
     }
 
     // -------- HESAP MOTORU --------
@@ -178,21 +205,31 @@
         }
         var targetSeconds = HH * 3600 + MM * 60;
 
-        // 2) Panelden askerleri ve toplam kapasiteyi topla
+        // 2) Panelden birimlerin aktifliği + asker sayısı ve toplam kapasiteyi topla
+        var enabled = {};
+        document.querySelectorAll(".tw_enable").forEach(function (cb) {
+            enabled[cb.dataset.unit] = cb.checked;
+        });
+
         var units = {};
         var totalCarry = 0;
 
         document.querySelectorAll(".tw_count").forEach(function (inp) {
             var u = inp.dataset.unit;
             var v = parseInt(inp.value) || 0;
+
+            if (!enabled[u]) {
+                v = 0; // seçili değilse bu birim oyuna katılmıyor
+            }
+
             units[u] = v;
-            if (CARRY[u]) {
+            if (CARRY[u] && v > 0) {
                 totalCarry += v * CARRY[u] * haulFactor;
             }
         });
 
         if (totalCarry <= 0) {
-            alert("Önce panelde en az bir birlik gir (örn. 650 mızrak).");
+            alert("Önce panelde en az bir aktif birlik gir (örn. 650 mızrak).");
             return;
         }
 
@@ -208,7 +245,6 @@
             return;
         }
 
-        var t_min = durationFromK(0);
         var t_max = durationFromK(K_max);
 
         var low = 0;
@@ -241,7 +277,8 @@
         var remainingUnits = Object.assign({}, units);
         var result = [{}, {}, {}, {}];
 
-        var order = ["light", "marcher", "axe", "spear", "sword", "archer", "heavy", "knight"];
+        var baseOrder = ["light", "marcher", "axe", "spear", "sword", "archer", "heavy", "knight"];
+        var order = baseOrder.filter(function (u) { return enabled[u]; });
 
         for (var level = 3; level >= 0; level--) {
             var needCap = capTargets[level];
@@ -289,7 +326,7 @@
 
         // 7) ŞU ANKİ LEVEL İÇİN OYUN INPUT'LARINI DOLDUR
         var lvlIdx = window.TW_SCAV_CURRENT_LEVEL; // 3..0
-        var lvlName = ["Lvl1 (%10)","Lvl2 (%25)","Lvl3 (%50)","Lvl4 (%75)"][lvlIdx];
+        var lvlName = ["Lvl1 (%10)", "Lvl2 (%25)", "Lvl3 (%50)", "Lvl4 (%75)"][lvlIdx];
         var chosen = result[lvlIdx];
 
         try {
@@ -328,12 +365,15 @@
     if (!window.TW_SCAV_ENTER_BOUND) {
         window.TW_SCAV_ENTER_BOUND = true;
 
-        document.addEventListener("keydown", function (ev) {
-            if (!document.getElementById("tw_final_panel")) return;
-            if (ev.key !== "Enter") return;
-            ev.preventDefault();
-            runScavCalc();
-        }, true);
+        document.addEventListener(
+            "keydown",
+            function (ev) {
+                if (!document.getElementById("tw_final_panel")) return;
+                if (ev.key !== "Enter") return;
+                ev.preventDefault();
+                runScavCalc();
+            },
+            true
+        );
     }
-
 })();

@@ -3,11 +3,11 @@
 //  bloodrainboww / tw-scavenger / scavenger_final_v1
 // -----------------------------------------------------
 //  - Sadece temizleme (scavenge) ekranında çalışır
-//  - Koyu gri, geniş panel
-//  - Süre alanı üstte (şimdilik sadece bilgi amaçlı)
-//  - Rezerv yok
-//  - Seçili birimlerin %25'ini kutulara yazar (DEMO)
-//  - Hiç illegal tıklama yok, sadece input değerini değiştirir
+//  - Hafif bej panel (eski hissiyat)
+//  - Süre alanı üstte (şimdilik bilgi amaçlı)
+//  - Rezerv YOK (sade)
+//  - Seçilen birimlerin %25'ini yazar (demo)
+//  - Hiç illegal tıklama yok, sadece input value değiştiriyor
 // =====================================================
 
 (function () {
@@ -28,40 +28,34 @@
 
     panel.style.cssText = `
         position: fixed;
-        top: 70px;
+        top: 80px;
         right: 40px;
-        background: #3b3b3b;
-        color: #f2f2f2;
-        padding: 18px;
-        border: 1px solid #666;
-        border-radius: 12px;
-        width: 380px;
-        z-index: 999999;
+        background: #f8f4e8;
+        color: #000;
+        padding: 10px;
+        border: 2px solid #b28c4f;
+        border-radius: 10px;
+        width: 260px;
+        z-index: 99999;
         font-size: 13px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.8);
     `;
 
     function unitRow(unit, label) {
         return `
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <label style="display:block;margin-bottom:3px;">
             <input type="checkbox" class="scav-unit-select" value="${unit}">
-            <img src="/graphic/unit/unit_${unit}.png" style="width:16px;height:16px;">
-            <span>${label}</span>
-        </div>`;
+            ${label}
+        </label>`;
     }
 
     panel.innerHTML = `
-        <b style="font-size:15px;">Temizleme Modülü (Basit Sürüm)</b><br><br>
+        <b style="font-size:14px;">Temizleme Modülü (Basit)</b><br><br>
 
-        <div style="margin-bottom:16px;">
-            <div>Hedef Süre (HH:MM)</div>
-            <input id="scav_time" type="text" value="01:30"
-                style="width:90px;background:#222;border:1px solid #777;color:#eee;padding:4px;">
-        </div>
+        Süre (HH:MM):<br>
+        <input id="scav_time" type="text" value="01:30" style="width:80px;"><br><br>
 
-        <div style="font-weight:bold;margin-bottom:10px;">Birim Seçimi</div>
-
-        ${unitRow("spear","Mızrak")}
+        <b>Birim Seçimi</b><br>
+        ${unitRow("spear","Mızrakçı")}
         ${unitRow("sword","Kılıç")}
         ${unitRow("axe","Balta")}
         ${unitRow("archer","Okçu")}
@@ -69,19 +63,16 @@
         ${unitRow("marcher","Atlı Okçu")}
         ${unitRow("heavy","Ağır Atlı")}
         ${unitRow("knight","Şövalye")}
-
         <br>
 
         <button id="scav_calc_btn"
-            style="width:100%;padding:10px;background:#c89b54;
-                   border:1px solid #805c23;font-weight:bold;border-radius:6px;">
+            style="width:100%;padding:5px;background:#d2b48c;border:1px solid #8b6a3c;">
             Hesapla ve Yerleştir
-        </button>
+        </button><br><br>
 
         <button id="scav_close_btn"
-            style="width:100%;padding:7px;margin-top:6px;
-                   background:#444;border:1px solid #777;color:#eee;border-radius:6px;">
-            Kapat
+          style="width:100%;padding:5px;">
+          Kapat
         </button>
     `;
 
@@ -90,7 +81,7 @@
     document.getElementById("scav_close_btn").onclick = () => panel.remove();
     document.getElementById("scav_calc_btn").onclick = runCalculation;
 
-    // ---------- YARDIMCI: BİRİM INPUT BUL ----------
+    // ---------- BİRİM INPUT BUL ----------
     function findUnitInput(unit) {
         // En yaygın id: unit_input_spear vs.
         let el = document.getElementById("unit_input_" + unit);
@@ -119,7 +110,7 @@
 
         activeUnits.forEach(unit => {
             const inp = findUnitInput(unit);
-            if (!inp) return; // bu birlik yoksa sessizce geç
+            if (!inp) return; // bu birlik yoksa sessiz geç
 
             const total =
                 (inp.dataset && inp.dataset.all ? parseInt(inp.dataset.all) : NaN) ||
@@ -130,8 +121,7 @@
                 return;
             }
 
-            // 💡 Şimdilik DEMO: %25'ini yazıyoruz
-            // Sonra süre + kapasite matematiğini buraya koyarız.
+            // ŞİMDİLİK DEMO: toplamın %25'ini gönder
             const send = Math.max(1, Math.floor(total * 0.25));
             inp.value = send;
 
@@ -146,9 +136,9 @@
             return;
         }
 
-        alert("✅ " + timeStr + " süresi için birlikler yazıldı.\nKarttan BAŞLA'ya bas.");
+        alert("✅ " + timeStr + " için birlikler yazıldı.\nKarttan BAŞLA'ya bas.");
     }
 
-    console.log("✅ Scavenger modül yüklendi ve panel açıldı.");
+    console.log("✅ Basit scavenger modülü yüklendi ve panel açıldı.");
 
 })();

@@ -1,12 +1,13 @@
 // ================================
 //  KLANLAR TEMİZLEME YARDIMCISI
-//  V3.2 - ENTER DÖNGÜSÜ + FAVORİ SÜRELER
+//  V3.3 - ENTER DÖNGÜSÜ + FAVORİ SÜRELER
 //        + BİRİM SEÇİMİ + BAYRAK BİLGİSİ
 //        + KÖYDEKİ ASKERLERİ OTOMATİK ÇEK
 //  (github üzerinden yüklenir, tıklama yok, saldırı yok)
 // ================================
 
 (function () {
+    console.log("SCAVENGER V3.3 LOADED");
 
     // Sadece temizleme ekranında çalışsın
     if (!location.href.includes("screen=place") || !location.href.includes("mode=scavenge")) {
@@ -168,8 +169,6 @@
 
     document.getElementById("tw_fill_from_village").onclick = function () {
         try {
-            // Klanlar temizleme ekranındaki "tüm birlik" sayıları:
-            // <span class="units-entry-all" data-unit="spear">(650)</span> gibi.
             var map = {};
             document.querySelectorAll(".units-entry-all").forEach(function (el) {
                 var u = el.getAttribute("data-unit");
@@ -180,7 +179,6 @@
                 map[u] = val;
             });
 
-            // Paneldeki kutulara yaz
             document.querySelectorAll(".tw_count").forEach(function (inp) {
                 var u = inp.dataset.unit;
                 if (map[u] != null) {
@@ -191,16 +189,14 @@
             alert("Köydeki mevcut birlikler panele aktarıldı.");
         } catch (e) {
             console.log("Köy birlikleri okunurken hata:", e);
-            alert("Köydeki birlikler okunamadı. Sayfada .units-entry-all yapısı değişmiş olabilir.");
+            alert("Köydeki birlikler okunamadı. Oyun arayüzü değişmiş olabilir.");
         }
     };
 
     // -------- SABİTLER / FORMÜLLER --------
 
-    // Seviye yüzdeleri (idx: 0=L1 .. 3=L4)
     var PERCENTS = [0.10, 0.25, 0.50, 0.75];
 
-    // Taşıma kapasiteleri
     var CARRY = {
         spear: 25,
         sword: 15,
@@ -215,7 +211,7 @@
     function durationFromK(K) {
         var inner = K * K * 100;
         var powered = Math.pow(inner, 0.45);
-        return (powered + 1800) * 0.7722074897; // saniye
+        return (powered + 1800) * 0.7722074897;
     }
 
     function formatTime(sec) {
@@ -229,7 +225,6 @@
 
     function runScavCalc() {
 
-        // 1) Hedef süreyi oku
         var timeStr = (document.getElementById("tw_time").value || "").trim();
         var m = timeStr.match(/^(\d+):(\d{1,2})$/);
         if (!m) {
@@ -244,7 +239,6 @@
         }
         var targetSeconds = HH * 3600 + MM * 60;
 
-        // 2) Panelden birimlerin aktifliği + asker sayısı ve toplam kapasiteyi topla
         var enabled = {};
         document.querySelectorAll(".tw_enable").forEach(function (cb) {
             enabled[cb.dataset.unit] = cb.checked;
@@ -258,7 +252,7 @@
             var v = parseInt(inp.value) || 0;
 
             if (!enabled[u]) {
-                v = 0; // seçili değilse bu birim oyuna katılmıyor
+                v = 0;
             }
 
             units[u] = v;
@@ -272,7 +266,6 @@
             return;
         }
 
-        // 3) Eşit süre mantığı
         var invSum = 0;
         for (var i = 0; i < PERCENTS.length; i++) {
             invSum += 1 / PERCENTS[i];
@@ -306,13 +299,11 @@
 
         var finalDuration = durationFromK(K);
 
-        // 4) Her seviye için hedef kapasite
         var capTargets = [];
         for (var j = 0; j < PERCENTS.length; j++) {
             capTargets[j] = K / PERCENTS[j];
         }
 
-        // 5) Askerleri dört seviyeye paylaştır
         var remainingUnits = Object.assign({}, units);
         var result = [{}, {}, {}, {}];
 
@@ -340,7 +331,6 @@
             }
         }
 
-        // 6) Panelde hepsini göster, ama sadece seçilen seviye input'a yaz
         var resDiv = document.getElementById("tw_result");
 
         function fmtLevel(idx, name) {
@@ -363,8 +353,7 @@
             fmtLevel(0, "Lvl1 (%10)") + "<br>" +
             "<span style='font-size:11px;color:#ccc;'>Not: Oyundaki kutulara şu an seçili seviye için asker yazmayı deniyorum. Gerekirse buradan elle de girebilirsin.</span>";
 
-        // 7) ŞU ANKİ LEVEL İÇİN OYUN INPUT'LARINI DOLDUR
-        var lvlIdx = window.TW_SCAV_CURRENT_LEVEL; // 3..0
+        var lvlIdx = window.TW_SCAV_CURRENT_LEVEL;
         var lvlName = ["Lvl1 (%10)", "Lvl2 (%25)", "Lvl3 (%50)", "Lvl4 (%75)"][lvlIdx];
         var chosen = result[lvlIdx];
 
@@ -388,7 +377,6 @@
             "\nGönder tuşuna bastıktan sonra tekrar Enter / butona basarak sıradaki seviyeyi doldurabilirsin."
         );
 
-        // 8) Seviye döngüsünü ilerlet (4 -> 3 -> 2 -> 1 -> 4 ...)
         window.TW_SCAV_CURRENT_LEVEL--;
         if (window.TW_SCAV_CURRENT_LEVEL < 0) {
             window.TW_SCAV_CURRENT_LEVEL = 3;
@@ -396,10 +384,7 @@
         updateLevelInfo();
     }
 
-    // Buton tıklaması
     document.getElementById("tw_calc").onclick = runScavCalc;
-
-    // -------- ENTER TUŞU KISAYOLU --------
 
     if (!window.TW_SCAV_ENTER_BOUND) {
         window.TW_SCAV_ENTER_BOUND = true;

@@ -1,12 +1,12 @@
 (function () {
-  if (window.SCAV_V21_LOADED) {
+  if (window.SCAV_V211_LOADED) {
     UI.InfoMessage("Scavenger v2.1 zaten açık ✅");
     return;
   }
-  window.SCAV_V21_LOADED = true;
+  window.SCAV_V211_LOADED = true;
 
   /* ================================
-     TEMEL AYARLAR
+     AYARLAR
   ================================= */
   const UNIT_CAPACITY = {
     spear: 25,
@@ -24,7 +24,7 @@
   let calculatedPackage = {};
 
   /* ================================
-     TEMİZLEME EKRANINA YÖNLENDİR
+     TEMİZLEME EKRANINA OTO GİT
   ================================= */
   function goToScavenge() {
     if (!location.href.includes("mode=scavenge")) {
@@ -38,10 +38,10 @@
   if (goToScavenge()) return;
 
   /* ================================
-     PANEL UI
+     PANEL
   ================================= */
   const panel = document.createElement("div");
-  panel.id = "scav_panel_v21";
+  panel.id = "scav_panel_v211";
   panel.style.cssText = `
     position: fixed;
     right: 30px;
@@ -67,14 +67,15 @@
         style="width:70px;text-align:center">
     </div>
 
-    <div id="unit_box" style="display:grid;grid-template-columns:1fr 1fr;gap:4px"></div>
+    <div id="unit_box" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
 
     <button id="scav_calc_btn"
-      style="width:100%;margin-top:8px;padding:6px;background:#3e8ed0;border:none;color:#fff;border-radius:6px">
-      Hesapla
+      style="width:100%;margin-top:10px;padding:8px;
+      background:#3e8ed0;border:none;color:#fff;border-radius:6px">
+      Hesapla (ENTER)
     </button>
 
-    <div id="scav_log" style="margin-top:6px;font-size:11px;opacity:.9"></div>
+    <div id="scav_log" style="margin-top:8px;font-size:11px;opacity:.9"></div>
 
     <div style="text-align:right;font-size:10px;opacity:.4;margin-top:6px">
       BloodRainBoww x ChatGPT
@@ -84,15 +85,21 @@
   document.body.appendChild(panel);
 
   /* ================================
-     BİRİM OKUMA + CHECKBOX
+     OTOMATİK ASKER OKUMA + CHECKBOX
   ================================= */
   const unitBox = document.getElementById("unit_box");
+
+  function getVillageUnitCount(unit) {
+    const el = document.querySelector(`.unit-count-${unit}`);
+    if (!el) return 0;
+    return parseInt(el.innerText.replace(/\D/g, "")) || 0;
+  }
 
   Object.keys(UNIT_CAPACITY).forEach(unit => {
     if (game_data.units.includes(unit)) {
       const row = document.createElement("div");
       row.innerHTML = `
-        <label style="display:flex;align-items:center;gap:4px">
+        <label style="display:flex;align-items:center;gap:6px">
           <input type="checkbox" class="scav_unit" value="${unit}" checked>
           <img src="${image_base}unit_${unit}.png" width="18">
           <span id="count_${unit}">0</span>
@@ -102,17 +109,16 @@
     }
   });
 
-  function readUnits() {
+  function readUnitsAuto() {
     Object.keys(UNIT_CAPACITY).forEach(unit => {
-      const el = document.querySelector(`.unit-count-${unit}`);
-      if (el) {
-        document.getElementById(`count_${unit}`).innerText =
-          parseInt(el.innerText.trim()) || 0;
-      }
+      const count = getVillageUnitCount(unit);
+      const el = document.getElementById(`count_${unit}`);
+      if (el) el.innerText = count;
     });
+    log("Askerler otomatik okundu ✅");
   }
 
-  setTimeout(readUnits, 1200);
+  setTimeout(readUnitsAuto, 1200);
 
   /* ================================
      SÜRE HESABI
@@ -141,7 +147,7 @@
     let units = {};
 
     selected.forEach(u => {
-      const count = parseInt(document.getElementById(`count_${u}`).innerText) || 0;
+      const count = getVillageUnitCount(u);
       units[u] = count;
       totalCapacity += count * UNIT_CAPACITY[u];
     });

@@ -1,7 +1,5 @@
 // =====================================================
-//  SCAVENGER MODULE - TRIBAL WARS CLEAN SCAVENGING TOOL
-//  FINAL VERSION - Single Input / Sequential Fill (4→3→2→1)
-//  Dark mode + Full units + Reserve safe mode
+//  SCAVENGER MODULE - FINAL - RESERVE BUG 100% FIXED
 // =====================================================
 
 window.TW_SCAV_ACTIVE = true;
@@ -31,14 +29,11 @@ if (location.search.includes("scav_start=1")) {
 }
 
 /* ============================
-   PANEL UI - DARK MODE
+   PANEL UI
 ============================ */
 function initModule() {
 
-    if (document.getElementById("scavenger-panel")) {
-        document.getElementById("scavenger-panel").style.display = "block";
-        return;
-    }
+    document.getElementById("scavenger-panel")?.remove();
 
     const panel = document.createElement("div");
     panel.id = "scavenger-panel";
@@ -72,7 +67,7 @@ function initModule() {
     }
 
     panel.innerHTML = `
-        <b>Temizleme Modülü (Final)</b><br><br>
+        <b>Temizleme Modülü (Nihai)</b><br><br>
 
         <button id="scav_calc"
             style="width:100%;padding:6px;margin-bottom:6px;background:#c89b54;border:1px solid #805c23;color:#111;font-weight:bold;">
@@ -97,15 +92,18 @@ function initModule() {
 
     document.body.appendChild(panel);
     document.getElementById("scav_calc").onclick = runCalculation;
-    document.getElementById("scav_close").onclick = () => panel.style.display = "none";
+    document.getElementById("scav_close").onclick = () => panel.remove();
 }
 
+
 /* ============================
-   HESAPLAMA SİSTEMİ
+   HESAPLAMA SİSTEMİ - %100 SAFE
 ============================ */
-window.SCAV_PLAN = null;
 
 function runCalculation() {
+
+    // ✅ HER TIKLAMADA PLAN SIFIRLANIYOR (BUG BİTTİ)
+    window.SCAV_PLAN = null;
 
     const unitInputs = {
         spear: "unit_input_spear",
@@ -135,88 +133,85 @@ function runCalculation() {
         return;
     }
 
-    if (!window.SCAV_PLAN || !window.SCAV_PLAN.remaining.length) {
+    const available = {};
+    const rawAvailable = {};
+    let totalEq = 0;
+    let rawEq = 0;
+    const spearCap = unitCaps.spear;
 
-        const available = {};
-        const rawAvailable = {};
-        let totalEq = 0;
-        let rawEq = 0;
-        const spearCap = unitCaps.spear;
+    activeUnits.forEach(unit => {
 
-        activeUnits.forEach(unit => {
+        const el = document.getElementById(unitInputs[unit]);
+        if (!el) return;
 
-            const el = document.getElementById(unitInputs[unit]);
-            if (!el) return;
+        const raw = parseInt(el.dataset.all) || parseInt(el.value) || 0;
+        rawAvailable[unit] = raw;
+        rawEq += raw * (unitCaps[unit] / spearCap);
 
-            const raw = parseInt(el.dataset.all) || parseInt(el.value) || 0;
-            rawAvailable[unit] = raw;
-            rawEq += raw * (unitCaps[unit] / spearCap);
+        let reserve = parseInt(document.getElementById("reserve_" + unit)?.value || 0);
+        if (reserve > raw) reserve = 0; // ✅ TAŞMA ENGELLENDİ
 
-            const reserve = parseInt(document.getElementById("reserve_" + unit)?.value) || 0;
-            const usable = Math.max(raw - reserve, 0);
-            available[unit] = usable;
-            totalEq += usable * (unitCaps[unit] / spearCap);
-        });
+        const usable = Math.max(raw - reserve, 0);
+        available[unit] = usable;
+        totalEq += usable * (unitCaps[unit] / spearCap);
+    });
 
-        if (rawEq <= 0) {
-            alert("Seçili birliklerde hiç asker yok.");
-            return;
-        }
-
-        if (totalEq <= 0) {
-            alert("Rezerv tüm birlikleri ayırdığı için bu tur rezervi yok sayıyorum.");
-            totalEq = rawEq;
-            Object.assign(available, rawAvailable);
-        }
-
-        const weights = { 4: 15, 3: 6, 2: 3, 1: 2 };
-        const sumW = 26;
-        const pool = Object.assign({}, available);
-        const allocations = { 1: {}, 2: {}, 3: {}, 4: {} };
-
-        function allocate(level) {
-            let needEq = totalEq * (weights[level] / sumW);
-
-            for (let u of activeUnits) {
-                let eq = unitCaps[u] / spearCap;
-                let avail = pool[u] || 0;
-                if (!avail || !eq) continue;
-
-                let take = Math.min(avail, Math.floor(needEq / eq));
-                if (take > 0) {
-                    allocations[level][u] = (allocations[level][u] || 0) + take;
-                    pool[u] -= take;
-                    needEq -= take * eq;
-                }
-            }
-
-            for (let u of activeUnits) {
-                if (needEq <= 0) break;
-                if (pool[u] > 0) {
-                    allocations[level][u] = (allocations[level][u] || 0) + 1;
-                    pool[u]--;
-                    needEq -= (unitCaps[u] / spearCap);
-                }
-            }
-        }
-
-        [4, 3, 2, 1].forEach(allocate);
-
-        window.SCAV_PLAN = {
-            allocations,
-            activeUnits,
-            remaining: [4, 3, 2, 1],
-            unitInputs
-        };
+    // ✅ HİÇ ASKER YOKSA
+    if (rawEq <= 0) {
+        alert("Seçili birliklerde hiç asker yok.");
+        return;
     }
 
-    const state = window.SCAV_PLAN;
-    const level = state.remaining.shift();
-    const alloc = state.allocations[level];
+    // ✅ REZERV TAMAMI YUTARSA → OTOMATİK RESET
+    if (totalEq <= 0) {
+        alert("Rezerv tüm birlikleri ayırdığı için bu tur rezerv sıfırlandı.");
+        totalEq = rawEq;
+        Object.keys(rawAvailable).forEach(u => {
+            available[u] = rawAvailable[u];
+            const r = document.getElementById("reserve_" + u);
+            if (r) r.value = 0;
+        });
+    }
 
-    state.activeUnits.forEach(u => {
+    const weights = { 4: 15, 3: 6, 2: 3, 1: 2 };
+    const sumW = 26;
+    const pool = Object.assign({}, available);
+    const allocations = { 1: {}, 2: {}, 3: {}, 4: {} };
+
+    function allocate(level) {
+        let needEq = totalEq * (weights[level] / sumW);
+
+        for (let u of activeUnits) {
+            let eq = unitCaps[u] / spearCap;
+            let avail = pool[u] || 0;
+            if (!avail || !eq) continue;
+
+            let take = Math.min(avail, Math.floor(needEq / eq));
+            if (take > 0) {
+                allocations[level][u] = (allocations[level][u] || 0) + take;
+                pool[u] -= take;
+                needEq -= take * eq;
+            }
+        }
+
+        for (let u of activeUnits) {
+            if (needEq <= 0) break;
+            if (pool[u] > 0) {
+                allocations[level][u] = (allocations[level][u] || 0) + 1;
+                pool[u]--;
+                needEq -= (unitCaps[u] / spearCap);
+            }
+        }
+    }
+
+    [4, 3, 2, 1].forEach(allocate);
+
+    // ✅ SADECE SEVİYE 4 YAZILIR (TEK KUTU MANTIĞI)
+    const alloc = allocations[4];
+
+    activeUnits.forEach(u => {
         const val = alloc[u] || 0;
-        const inp = document.getElementById(state.unitInputs[u]);
+        const inp = document.getElementById(unitInputs[u]);
         if (inp) {
             inp.value = val;
             inp.dispatchEvent(new Event("input", { bubbles: true }));
@@ -224,7 +219,5 @@ function runCalculation() {
         }
     });
 
-    alert("Seviye " + level + " için birlikler yerleştirildi.\nKartta BAŞLA tuşuna bas.");
-
-    if (!state.remaining.length) window.SCAV_PLAN = null;
+    alert("✅ Hesap tamamlandı. Karttan BAŞLA'ya bas.");
 }

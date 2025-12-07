@@ -1,6 +1,7 @@
 // =====================================================
 //  SCAVENGER MODULE - TRIBAL WARS CLEAN SCAVENGING TOOL
 //  FINAL VERSION - Single Input / Sequential Fill (4→3→2→1)
+//  Dark mode + extra units + per-unit reserve
 // =====================================================
 
 // Global flag to avoid double loading
@@ -36,7 +37,7 @@ if (location.search.includes("scav_start=1")) {
 }
 
 // ----------------------------------------------
-// PANEL UI
+// PANEL UI (DARK MODE + EXTRA UNITS + PER-UNIT RESERVE)
 // ----------------------------------------------
 function initModule() {
 
@@ -52,70 +53,171 @@ function initModule() {
         position: fixed;
         top: 80px;
         right: 40px;
-        background: #fff7e1;
+        background: #111;
+        color: #f2f2f2;
         padding: 12px;
-        border: 2px solid #b28c4f;
+        border: 1px solid #444;
         border-radius: 10px;
-        width: 250px;
+        width: 280px;
         z-index: 99999;
         font-size: 13px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.4);
+        box-shadow: 0 0 8px rgba(0,0,0,0.7);
     `;
 
     panel.innerHTML = `
-        <b style="font-size:14px;">Temizleme Modülü (Final v1)</b><br><br>
+        <div style="font-size:14px;font-weight:bold;margin-bottom:6px;">
+            Temizleme Modülü (Final v1)
+        </div>
 
-        Süre (HH:MM):<br>
-        <input id="scav_time" type="text" value="01:07" style="width:80px;"><br><br>
+        <div style="margin-bottom:8px;">
+            <div style="margin-bottom:3px;">Süre (HH:MM):</div>
+            <input id="scav_time" type="text" value="01:07"
+                   style="width:80px;padding:3px;background:#222;border:1px solid #555;color:#eee;">
+        </div>
 
-        <b>Birim Seçimi</b><br>
-        <label><input type="checkbox" class="unit-select" value="spear" checked> Mızrakçı</label><br>
-        <label><input type="checkbox" class="unit-select" value="sword"> Kılıç</label><br>
-        <label><input type="checkbox" class="unit-select" value="axe"> Balta</label><br>
-        <label><input type="checkbox" class="unit-select" value="archer"> Okçu</label><br><br>
+        <div style="font-weight:bold;margin-bottom:4px;">Birim Seçimi</div>
 
-        Rezerv (ayır):<br>
-        <input id="reserve" type="number" value="0" style="width:80px;"><br><br>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">
 
-        <button id="scav_calc" style="width:100%;padding:6px;background:#d2b48c;border:1px solid #8b6a3c;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="spear" checked>
+                    <img src="/graphic/unit/unit_spear.png" alt="" style="width:16px;height:16px;">
+                    <span>Mızrakçı</span>
+                </label>
+                <input id="reserve_spear" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Mızrakçı rezerv">
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="sword">
+                    <img src="/graphic/unit/unit_sword.png" alt="" style="width:16px;height:16px;">
+                    <span>Kılıç</span>
+                </label>
+                <input id="reserve_sword" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Kılıç rezerv">
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="axe">
+                    <img src="/graphic/unit/unit_axe.png" alt="" style="width:16px;height:16px;">
+                    <span>Balta</span>
+                </label>
+                <input id="reserve_axe" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Balta rezerv">
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="archer">
+                    <img src="/graphic/unit/unit_archer.png" alt="" style="width:16px;height:16px;">
+                    <span>Okçu</span>
+                </label>
+                <input id="reserve_archer" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Okçu rezerv">
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="light">
+                    <img src="/graphic/unit/unit_light.png" alt="" style="width:16px;height:16px;">
+                    <span>Hafif Atlı</span>
+                </label>
+                <input id="reserve_light" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Hafif atlı rezerv">
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="marcher">
+                    <img src="/graphic/unit/unit_marcher.png" alt="" style="width:16px;height:16px;">
+                    <span>Atlı Okçu</span>
+                </label>
+                <input id="reserve_marcher" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Atlı okçu rezerv">
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="heavy">
+                    <img src="/graphic/unit/unit_heavy.png" alt="" style="width:16px;height:16px;">
+                    <span>Ağır Atlı</span>
+                </label>
+                <input id="reserve_heavy" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Ağır atlı rezerv">
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                <label style="display:flex;align-items:center;gap:4px;">
+                    <input type="checkbox" class="unit-select" value="knight">
+                    <img src="/graphic/unit/unit_knight.png" alt="" style="width:16px;height:16px;">
+                    <span>Şövalye</span>
+                </label>
+                <input id="reserve_knight" type="number" value="0" min="0"
+                       style="width:60px;padding:2px;background:#222;border:1px solid #555;color:#eee;"
+                       title="Şövalye rezerv">
+            </div>
+
+        </div>
+
+        <button id="scav_calc"
+                style="width:100%;padding:6px;margin-bottom:6px;background:#c89b54;border:1px solid #805c23;color:#111;font-weight:bold;">
             Hesapla ve Yerleştir
-        </button><br><br>
+        </button>
 
-        <button onclick="document.getElementById('scavenger-panel').style.display='none'"
-          style="width:100%;padding:5px;">
-          Kapat
+        <button id="scav_close"
+                style="width:100%;padding:5px;background:#333;border:1px solid #555;color:#eee;">
+            Kapat
         </button>
     `;
 
     document.body.appendChild(panel);
 
     document.getElementById("scav_calc").onclick = runCalculation;
+    document.getElementById("scav_close").onclick = function () {
+        panel.style.display = "none";
+    };
 
-    console.log("%c[Scavenger Final v1] Module Loaded", "color:green;font-weight:bold;");
+    console.log("%c[Scavenger Final v1] Module Loaded", "color:lime;font-weight:bold;");
 }
 
 // =====================================================
-//  PLAN HESAPLAMA (4 → 3 → 2 → 1)
+//  PLAN HESAPLAMA (4 → 3 → 2 → 1, tek input)
 // =====================================================
 
 window.SCAV_PLAN = null;
 
 function runCalculation() {
 
-    const reserve = parseInt(document.getElementById("reserve").value) || 0;
-
     const unitInputs = {
         spear: "unit_input_spear",
         sword: "unit_input_sword",
         axe: "unit_input_axe",
-        archer: "unit_input_archer"
+        archer: "unit_input_archer",
+        light: "unit_input_light",
+        marcher: "unit_input_marcher",
+        heavy: "unit_input_heavy",
+        knight: "unit_input_knight"
     };
 
     const unitCaps = {
         spear: 25,
         sword: 15,
         axe: 10,
-        archer: 18
+        archer: 18,
+        light: 80,
+        marcher: 50,
+        heavy: 50,
+        knight: 100
     };
 
     const activeUnits = [...document.querySelectorAll(".unit-select:checked")].map(e => e.value);
@@ -131,13 +233,17 @@ function runCalculation() {
         let totalEq = 0;
         const spearCap = unitCaps.spear;
 
-        // Köydeki mevcut birlikleri oku
         activeUnits.forEach(unit => {
-            const el = document.getElementById(unitInputs[unit]);
+            const inputId = unitInputs[unit];
+            const el = document.getElementById(inputId);
             if (!el) return;
 
             const raw = parseInt(el.dataset.all) || parseInt(el.value) || 0;
-            const usable = Math.max(raw - reserve, 0);
+
+            const reserveInput = document.getElementById("reserve_" + unit);
+            const reserveVal = reserveInput ? (parseInt(reserveInput.value) || 0) : 0;
+
+            const usable = Math.max(raw - reserveVal, 0);
             available[unit] = usable;
 
             totalEq += usable * (unitCaps[unit] / spearCap);
@@ -148,7 +254,7 @@ function runCalculation() {
             return;
         }
 
-        // 650 mızrak örneğine göre oran seti:
+        // 650 mızrak örneğine göre ağırlık seti (4:15, 3:6, 2:3, 1:2)
         const weights = { 4: 15, 3: 6, 2: 3, 1: 2 };
         const sumW = 15 + 6 + 3 + 2;
 
@@ -164,7 +270,7 @@ function runCalculation() {
             for (let u of order) {
                 let eq = unitCaps[u] / spearCap;
                 let avail = pool[u] || 0;
-                if (avail <= 0) continue;
+                if (avail <= 0 || eq <= 0) continue;
 
                 let take = Math.min(avail, Math.floor(needEq / eq));
                 if (take > 0) {
@@ -174,7 +280,7 @@ function runCalculation() {
                 }
             }
 
-            // bitmediyse 1'er 1'er tamamla
+            // hala eksikse 1'er 1'er doldur
             for (let u of order) {
                 if (needEq <= 0) break;
                 let avail = pool[u] || 0;
@@ -185,7 +291,6 @@ function runCalculation() {
             }
         }
 
-        // Sırayla hesapla
         [4, 3, 2, 1].forEach(allocate);
 
         window.SCAV_PLAN = {
@@ -196,10 +301,10 @@ function runCalculation() {
         };
     }
 
-    // Burada sıradaki seviyeyi dolduruyoruz
+    // Sıradaki seviye için tek satırı doldur
     const state = window.SCAV_PLAN;
-    const level = state.remaining.shift();
-    const alloc = state.allocations[level];
+    const level = state.remaining.shift(); // 4 → 3 → 2 → 1
+    const alloc = state.allocations[level] || {};
 
     state.activeUnits.forEach(u => {
         const val = alloc[u] || 0;
@@ -213,4 +318,9 @@ function runCalculation() {
     });
 
     alert("Seviye " + level + " için birlikler yerleştirildi.\nKartta BAŞLA tuşuna bas.");
+
+    // Tüm seviyeler bittiğinde planı sıfırla
+    if (!state.remaining.length) {
+        window.SCAV_PLAN = null;
+    }
 }

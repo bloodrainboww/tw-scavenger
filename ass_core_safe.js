@@ -1,7 +1,8 @@
 // ==========================================
-//  ASS CORE - SAFE VERSION (NO CLICK / NO SEND)
-//  Based on ASS logic (TwCheese reference)
-//  Only: READ → CALC → WRITE TO INPUT
+//  ASS CORE - SAFE VERSION v2.1 FIXED
+//  REAL GAME INPUT COMPATIBLE
+//  ONLY: READ → CALC → WRITE
+//  NO CLICK / NO SEND
 // ==========================================
 
 (function () {
@@ -12,11 +13,12 @@
         return;
     }
 
-    console.log("✅ ASS SAFE CORE LOADED");
+    console.clear();
+    console.log("✅ ASS SAFE CORE v2.1 FIXED YÜKLENDİ");
 
-    // ----------------------------------
-    //  SCAVENGE SEVİYELERİ (YÜZDELER)
-    // ----------------------------------
+    // =========================
+    //  SEVİYE ORANLARI
+    // =========================
     const SCAVENGE_LEVELS = {
         scavenger_0: 0.75, // Büyük
         scavenger_1: 0.50, // Zeki
@@ -24,9 +26,9 @@
         scavenger_3: 0.10  // Tembel
     };
 
-    // ----------------------------------
-    //  BİRİM KAPASİTELERİ (GENEL)
-    // ----------------------------------
+    // =========================
+    //  BİRİM KAPASİTELERİ
+    // =========================
     const UNIT_CAPACITY = {
         spear: 25,
         sword: 15,
@@ -38,9 +40,9 @@
         knight: 100
     };
 
-    // ----------------------------------
-    //  KÖYDEKİ ASKERLERİ OKU
-    // ----------------------------------
+    // =========================
+    //  KÖYDEKİ ASKER OKUMA
+    // =========================
     function readVillageUnits() {
         const units = {};
         document.querySelectorAll(".units-entry-all").forEach(el => {
@@ -48,47 +50,63 @@
             const count = parseInt(el.textContent.replace(/\D/g, ""));
             if (!isNaN(count)) units[unit] = count;
         });
+
+        console.log("📦 Köyde okunan askerler:", units);
         return units;
     }
 
-    // ----------------------------------
-    //  TOPLAM KAPASİTE HESABI
-    // ----------------------------------
+    // =========================
+    //  TOPLAM KAPASİTE
+    // =========================
     function calculateTotalCapacity(units) {
         let total = 0;
-        for (const unit in units) {
-            if (UNIT_CAPACITY[unit]) {
-                total += units[unit] * UNIT_CAPACITY[unit];
+        for (const u in units) {
+            if (UNIT_CAPACITY[u]) {
+                total += units[u] * UNIT_CAPACITY[u];
             }
         }
+        console.log("🧮 Toplam kapasite:", total);
         return total;
     }
 
-    // ----------------------------------
-    //  KAPASİTEYİ SEVİYELERE BÖL
-    // ----------------------------------
-    function splitCapacityByLevel(totalCapacity) {
-        const result = {};
-        for (const level in SCAVENGE_LEVELS) {
-            result[level] = Math.floor(totalCapacity * SCAVENGE_LEVELS[level]);
+    // =========================
+    //  SEVİYELERE BÖL
+    // =========================
+    function splitCapacity(total) {
+        const caps = {};
+        for (const lvl in SCAVENGE_LEVELS) {
+            caps[lvl] = Math.floor(total * SCAVENGE_LEVELS[lvl]);
         }
-        return result;
+        console.log("📊 Seviye kapasiteleri:", caps);
+        return caps;
     }
 
-    // ----------------------------------
-    //  ASKER DAĞIT ve INPUT’A YAZ
-    // ----------------------------------
+    // =========================
+    //  GERÇEK INPUT BULUCU
+    // =========================
+    function findRealInput(block, unit) {
+        return (
+            block.querySelector(`input[name='${unit}']`) ||
+            block.querySelector(`.unitsInput[name='${unit}']`)
+        );
+    }
+
+    // =========================
+    //  DAĞIT & YAZ
+    // =========================
     function distributeAndWrite() {
         const villageUnits = readVillageUnits();
-        const totalCapacity = calculateTotalCapacity(villageUnits);
-        const levelCaps = splitCapacityByLevel(totalCapacity);
+        const totalCap = calculateTotalCapacity(villageUnits);
+        const levelCaps = splitCapacity(totalCap);
 
-        console.log("Toplam kapasite:", totalCapacity);
-        console.log("Seviye kapasiteleri:", levelCaps);
+        let wroteSomething = false;
 
         for (const level in SCAVENGE_LEVELS) {
             const block = document.getElementById(level);
-            if (!block) continue;
+            if (!block) {
+                console.warn("❌ Seviye bloğu bulunamadı:", level);
+                continue;
+            }
 
             let remainingCap = levelCaps[level];
 
@@ -96,7 +114,7 @@
                 if (!UNIT_CAPACITY[unit]) continue;
                 if (villageUnits[unit] <= 0) continue;
 
-                const input = block.querySelector(`input[name='${unit}']`);
+                const input = findRealInput(block, unit);
                 if (!input) continue;
 
                 const maxByCap = Math.floor(remainingCap / UNIT_CAPACITY[unit]);
@@ -104,23 +122,30 @@
 
                 if (sendCount > 0) {
                     input.value = sendCount;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
                     remainingCap -= sendCount * UNIT_CAPACITY[unit];
                     villageUnits[unit] -= sendCount;
+                    wroteSomething = true;
+
+                    console.log(`✍️ ${level} → ${unit}: ${sendCount} yazıldı`);
                 }
 
                 if (remainingCap <= 0) break;
             }
         }
 
-        alert("✅ Askerler temizleme seviyelerine yazıldı.\n(Gönderme yok, sadece input dolduruldu)");
+        if (wroteSomething) {
+            alert("✅ Askerler gerçek oyun input’larına yazıldı.\n(Gönderme YOK)");
+        } else {
+            alert("❌ Hiçbir input bulunamadı.\nOyunun HTML yapısı farklı olabilir.");
+        }
     }
 
-    // ----------------------------------
-    //  DIŞARI AÇILAN TEK FONKSİYON
-    // ----------------------------------
+    // =========================
+    //  DIŞARI AÇ
+    // =========================
     window.ASS_SAFE_FILL = distributeAndWrite;
-
-    console.log("➡ Konsoldan şu komutla çalıştır:");
+    console.log("➡ Konsola şunu yaz:");
     console.log("ASS_SAFE_FILL();");
 
 })();

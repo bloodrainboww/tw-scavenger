@@ -1,34 +1,22 @@
 // =====================================================
-//  SCAVENGER MODULE - FINAL FULL CLEAN VERSION
-//  - Auto panel open
+//  SCAVENGER MODULE - ABSOLUTE FINAL - AUTO PANEL
 //  - No reserve
-//  - Dark grey wide UI
-//  - Time on top
+//  - Dark grey wide panel
+//  - No redirect
+//  - No boot dependency
+//  - Panel opens immediately when script loads
 // =====================================================
 
-window.TW_SCAV_ACTIVE = true;
-
-/* ============================
-   FORCE BOOT (NO REDIRECT)
-============================ */
-(function forceBoot(){
-    setTimeout(function(){
-        try {
-            initModule();
-            console.log("Scavenger panel force-loaded.");
-        } catch(e){
-            console.log("Panel not ready yet...");
-        }
-    }, 800);
-})();
+(function(){
 
 /* ============================
    PANEL UI
 ============================ */
 function initModule() {
 
-    // Panel varsa kaldırıp yeniden oluştur
-    document.getElementById("scavenger-panel")?.remove();
+    // Eski panel varsa temizle
+    const old = document.getElementById("scavenger-panel");
+    if (old) old.remove();
 
     const panel = document.createElement("div");
     panel.id = "scavenger-panel";
@@ -43,7 +31,7 @@ function initModule() {
         border: 1px solid #666;
         border-radius: 12px;
         width: 380px;
-        z-index: 999999;
+        z-index: 9999999;
         font-size: 13px;
         box-shadow: 0 0 10px rgba(0,0,0,0.8);
     `;
@@ -58,7 +46,7 @@ function initModule() {
     }
 
     panel.innerHTML = `
-        <b style="font-size:15px;">Temizleme Modülü (Final)</b><br><br>
+        <b style="font-size:15px;">Temizleme Modülü (AUTO)</b><br><br>
 
         <div style="margin-bottom:16px;">
             <div>Hedef Süre (HH:MM)</div>
@@ -95,30 +83,26 @@ function initModule() {
     document.body.appendChild(panel);
 
     document.getElementById("scav_calc").onclick = runCalculation;
-    document.getElementById("scav_close").onclick = () => panel.remove();
+    document.getElementById("scav_close").onclick = function(){ panel.remove(); };
+
+    console.log("✅ Scavenger panel DIRECT opened");
 }
 
 /* ============================
-   UNIT INPUT FINDER (UNIVERSAL)
+   UNIT INPUT FINDER (SAFE)
 ============================ */
 function findUnitInput(unit) {
-
-    let el = document.getElementById("unit_input_" + unit);
-    if (el) return el;
-
-    el = document.querySelector("input[name='" + unit + "']");
-    if (el) return el;
-
-    el = document.querySelector("input[id*='" + unit + "']");
-    return el || null;
+    return (
+        document.getElementById("unit_input_" + unit) ||
+        document.querySelector("input[name='" + unit + "']") ||
+        document.querySelector("input[id*='" + unit + "']")
+    );
 }
 
 /* ============================
-   CALCULATION (NO RESERVE, NO ERROR)
+   CALCULATION - SIMPLE & SAFE
 ============================ */
 function runCalculation() {
-
-    const selectedTime = document.getElementById("scav_time").value || "01:30";
 
     const activeUnits = [...document.querySelectorAll(".unit-select:checked")].map(e => e.value);
     if (!activeUnits.length) {
@@ -126,10 +110,9 @@ function runCalculation() {
         return;
     }
 
-    let anyWritten = false;
+    let wroteAny = false;
 
     activeUnits.forEach(unit => {
-
         const inp = findUnitInput(unit);
         if (!inp) return;
 
@@ -142,20 +125,26 @@ function runCalculation() {
             return;
         }
 
-        // Şimdilik demo: %25 gönder
         const send = Math.max(1, Math.floor(total * 0.25));
         inp.value = send;
 
         inp.dispatchEvent(new Event("input", { bubbles: true }));
         inp.dispatchEvent(new Event("change", { bubbles: true }));
 
-        anyWritten = true;
+        wroteAny = true;
     });
 
-    if (!anyWritten) {
-        alert("Bu köyde seçtiğin birliklerden hiçbiri gönderilebilir durumda değil.");
+    if (!wroteAny) {
+        alert("Bu köyde seçtiğin birliklerden gönderilebilecek asker yok.");
         return;
     }
 
-    alert("✅ " + selectedTime + " süresine göre birlikler yazıldı.\nKarttan BAŞLA'ya bas.");
+    alert("✅ Birlikler yazıldı. Karttan BAŞLA'ya bas.");
 }
+
+/* ============================
+   PANELİN GERÇEKTEN AÇILMASINI GARANTİLE
+============================ */
+setTimeout(initModule, 800);
+
+})();

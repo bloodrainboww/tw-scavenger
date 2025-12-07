@@ -1,7 +1,8 @@
 // ================================
 //  KLANLAR TEMİZLEME YARDIMCISI
-//  V3.1 - ENTER DÖNGÜSÜ + FAVORİ SÜRELER
+//  V3.2 - ENTER DÖNGÜSÜ + FAVORİ SÜRELER
 //        + BİRİM SEÇİMİ + BAYRAK BİLGİSİ
+//        + KÖYDEKİ ASKERLERİ OTOMATİK ÇEK
 //  (github üzerinden yüklenir, tıklama yok, saldırı yok)
 // ================================
 
@@ -35,7 +36,7 @@
     if (bonusPercent <= 0) {
         flagInfoText = "Taşıma bayrağı yok veya etkisiz.";
     } else {
-        // Kullanıcının verdiği skala: %2–%10 → seviye 1–9
+        // Senin verdiğin skala: %2–%10 → seviye 1–9
         var levelMap = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9 };
         var lvl = levelMap[bonusPercent] || "?";
         flagInfoText =
@@ -82,8 +83,15 @@
         '    🛡️ Temizleme Dağıtım Paneli (ENTER Paşa Modu)' +
         ' </div>' +
 
-        '<div id="tw_flag" style="text-align:center;font-size:11px;margin-bottom:6px;color:#ccc;">' +
+        '<div id="tw_flag" style="text-align:center;font-size:11px;margin-bottom:4px;color:#ccc;">' +
         flagInfoText +
+        '</div>' +
+
+        '<div style="text-align:center;margin-bottom:6px;">' +
+        '    <button type="button" id="tw_fill_from_village" ' +
+        '            style="padding:3px 6px;font-size:11px;background:#555;border:1px solid #333;border-radius:6px;color:#eee;">' +
+        '        Köydeki askerleri çek' +
+        '    </button>' +
         '</div>' +
 
         '<div style="text-align:center;margin-bottom:8px;">' +
@@ -155,6 +163,37 @@
             if (input) input.value = t;
         };
     });
+
+    // -------- KÖYDEKİ ASKERLERİ OTOMATİK ÇEK BUTONU --------
+
+    document.getElementById("tw_fill_from_village").onclick = function () {
+        try {
+            // Klanlar temizleme ekranındaki "tüm birlik" sayıları:
+            // <span class="units-entry-all" data-unit="spear">(650)</span> gibi.
+            var map = {};
+            document.querySelectorAll(".units-entry-all").forEach(function (el) {
+                var u = el.getAttribute("data-unit");
+                if (!u) return;
+                var txt = el.textContent || "";
+                var m = txt.match(/(\d+)/);
+                var val = m ? parseInt(m[1], 10) : 0;
+                map[u] = val;
+            });
+
+            // Paneldeki kutulara yaz
+            document.querySelectorAll(".tw_count").forEach(function (inp) {
+                var u = inp.dataset.unit;
+                if (map[u] != null) {
+                    inp.value = map[u];
+                }
+            });
+
+            alert("Köydeki mevcut birlikler panele aktarıldı.");
+        } catch (e) {
+            console.log("Köy birlikleri okunurken hata:", e);
+            alert("Köydeki birlikler okunamadı. Sayfada .units-entry-all yapısı değişmiş olabilir.");
+        }
+    };
 
     // -------- SABİTLER / FORMÜLLER --------
 

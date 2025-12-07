@@ -1,42 +1,33 @@
 // =====================================================
-//  SCAVENGER MODULE - FINAL (NO RESERVE, STABLE)
-//  - Koyu gri geniş panel
-//  - Süre alanı üstte
-//  - Rezerv yok
-//  - "Birlik yok" hatası yok (sadece varsa yazar, yoksa sessiz)
+//  SCAVENGER MODULE - FINAL FULL CLEAN VERSION
+//  - Auto panel open
+//  - No reserve
+//  - Dark grey wide UI
+//  - Time on top
 // =====================================================
 
 window.TW_SCAV_ACTIVE = true;
 
 /* ============================
-   AUTO BOOT
+   FORCE BOOT (NO REDIRECT)
 ============================ */
-window.__SCAVENGER_BOOT = function () {
-
-    if (location.href.includes("screen=place") && location.href.includes("mode=scavenge")) {
-        initModule();
-        return;
-    }
-
-    const villageMatch = location.href.match(/village=(\d+)/);
-    const villageId = villageMatch ? villageMatch[1] : null;
-    if (!villageId) {
-        alert("Köy ID bulunamadı.");
-        return;
-    }
-
-    location.href = `/game.php?village=${villageId}&screen=place&mode=scavenge&scav_start=1`;
-};
-
-if (location.search.includes("scav_start=1")) {
-    setTimeout(() => initModule(), 400);
-}
+(function forceBoot(){
+    setTimeout(function(){
+        try {
+            initModule();
+            console.log("Scavenger panel force-loaded.");
+        } catch(e){
+            console.log("Panel not ready yet...");
+        }
+    }, 800);
+})();
 
 /* ============================
-   PANEL UI - DARK GREY + WIDE
+   PANEL UI
 ============================ */
 function initModule() {
 
+    // Panel varsa kaldırıp yeniden oluştur
     document.getElementById("scavenger-panel")?.remove();
 
     const panel = document.createElement("div");
@@ -52,14 +43,14 @@ function initModule() {
         border: 1px solid #666;
         border-radius: 12px;
         width: 380px;
-        z-index: 99999;
+        z-index: 999999;
         font-size: 13px;
         box-shadow: 0 0 10px rgba(0,0,0,0.8);
     `;
 
     function unitRow(unit, label) {
         return `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
             <input type="checkbox" class="unit-select" value="${unit}">
             <img src="/graphic/unit/unit_${unit}.png" style="width:16px;height:16px;">
             <span>${label}</span>
@@ -67,16 +58,15 @@ function initModule() {
     }
 
     panel.innerHTML = `
-        <b style="font-size:15px;">Temizleme Modülü (Rezervsiz Final)</b><br><br>
+        <b style="font-size:15px;">Temizleme Modülü (Final)</b><br><br>
 
-        <!-- SÜRE -->
-        <div style="margin-bottom:14px;">
+        <div style="margin-bottom:16px;">
             <div>Hedef Süre (HH:MM)</div>
             <input id="scav_time" type="text" value="01:30"
                 style="width:90px;background:#222;border:1px solid #777;color:#eee;padding:4px;">
         </div>
 
-        <div style="font-weight:bold;margin-bottom:10px;">Birim Seçimi</div>
+        <div style="font-weight:bold;margin-bottom:12px;">Birim Seçimi</div>
 
         ${unitRow("spear","Mızrak")}
         ${unitRow("sword","Kılıç")}
@@ -89,7 +79,6 @@ function initModule() {
 
         <br>
 
-        <!-- BUTON EN ALTA -->
         <button id="scav_calc"
             style="width:100%;padding:10px;background:#c89b54;
                    border:1px solid #805c23;font-weight:bold;border-radius:6px;">
@@ -104,30 +93,28 @@ function initModule() {
     `;
 
     document.body.appendChild(panel);
+
     document.getElementById("scav_calc").onclick = runCalculation;
     document.getElementById("scav_close").onclick = () => panel.remove();
 }
 
 /* ============================
-   YARDIMCI: BİRİM INPUT'UNU BUL
-   (ID TUTMAZSA name='spear' vs. ile yakalar)
+   UNIT INPUT FINDER (UNIVERSAL)
 ============================ */
 function findUnitInput(unit) {
-    // En yaygın id formatı
+
     let el = document.getElementById("unit_input_" + unit);
     if (el) return el;
 
-    // Bazı dünyalarda sadece name kullanılıyor
     el = document.querySelector("input[name='" + unit + "']");
     if (el) return el;
 
-    // Son çare: id içinde unit geçen input
     el = document.querySelector("input[id*='" + unit + "']");
     return el || null;
 }
 
 /* ============================
-   HESAPLAMA - REZERV YOK, HATA YOK
+   CALCULATION (NO RESERVE, NO ERROR)
 ============================ */
 function runCalculation() {
 
@@ -142,32 +129,33 @@ function runCalculation() {
     let anyWritten = false;
 
     activeUnits.forEach(unit => {
+
         const inp = findUnitInput(unit);
-        if (!inp) return; // o birlik bu dünyada / ekranda yoksa sessizce geç
+        if (!inp) return;
 
         const total =
-            (typeof inp.dataset.all !== "undefined" ? parseInt(inp.dataset.all) : NaN) ||
+            (inp.dataset && inp.dataset.all ? parseInt(inp.dataset.all) : NaN) ||
             parseInt(inp.value) || 0;
 
         if (total <= 0) {
-            // bu birimde asker yoksa 0 yazar geçer, hata vermez
             inp.value = 0;
             return;
         }
 
-        // ŞİMDİLİK: basit demo – %25'ini yaz
-        // Sonradan burayı gerçek süre/kapasite mantığıyla değiştireceğiz.
+        // Şimdilik demo: %25 gönder
         const send = Math.max(1, Math.floor(total * 0.25));
         inp.value = send;
+
         inp.dispatchEvent(new Event("input", { bubbles: true }));
         inp.dispatchEvent(new Event("change", { bubbles: true }));
+
         anyWritten = true;
     });
 
     if (!anyWritten) {
-        alert("Seçtiğin birimlerde yazılacak asker bulunamadı (hepsi 0 olabilir).");
+        alert("Bu köyde seçtiğin birliklerden hiçbiri gönderilebilir durumda değil.");
         return;
     }
 
-    alert("✅ " + selectedTime + " için birlikler yazıldı.\nKarttan BAŞLA'ya bas.");
+    alert("✅ " + selectedTime + " süresine göre birlikler yazıldı.\nKarttan BAŞLA'ya bas.");
 }
